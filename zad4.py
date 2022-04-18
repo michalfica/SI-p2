@@ -1,13 +1,30 @@
-
 from queue import Queue
 import random
 from tokenize import String
 from tracemalloc import start
+from turtle import pos
 from typing import List
 
 class P:
     def __init__(self, x, y):
         self.x, self.y = x, y
+    
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, P):
+            return (self.x==other.x and self.y==other.y)
+        return NotImplemented
+
+    def __ne__(self, other):
+        """Overrides the default implementation (unnecessary in Python 3)"""
+        x = self.__eq__(other)
+        if x is NotImplemented:
+            return NotImplemented
+        return not x
+
+    def __hash__(self):
+        """Overrides the default implementation"""
+        return hash(tuple(sorted(self.__dict__.items())))
 
     def __str__(self):
         return f"({self.x},{self.y})"
@@ -17,7 +34,7 @@ class P:
         
 def init():
     board = list()
-    with open('test.txt', 'r') as file:
+    with open('zad_input.txt', 'r') as file:
         lines = file.readlines()
         for line in lines:
             board.append(line.strip())
@@ -31,14 +48,18 @@ def findPos(t,x):
             if t[i][j] == x: result.append(P(i,j))
     return result
 
-def drawPath(n):
-    path = ''
-    for i in range(n):
-        path = path + (random.sample(['L','R','U','D'], 1)[0])
+def drawPath(board):
+    path =''.join(   ['L']*len(board[0]) + ['D']*len(board) + ['R']*len(board[0]) + ['U']*len(board))
     return path 
 
 def setPosition(board,path,Ps):
     def moveP(p,move):
+        newP = P(p.x,p.y) 
+
+        """
+            ^-- tu mogą być kłopoty
+        """
+
         if move=='U': newP = P(p.x-1,p.y)
         if move=='D': newP = P(p.x+1,p.y)
         if move=='L': newP = P(p.x,p.y-1)
@@ -54,7 +75,7 @@ def setPosition(board,path,Ps):
         for move in path:
              p = moveP(p,move)
         newPs.append(p)
-    return newPs
+    return set(newPs)
 
 class State:
     def __init__(self,ps,sciezka):
@@ -70,7 +91,7 @@ class State:
         return f"({self.ps} ; {self.sciezka})"
 
 def BFS(board,startPs,endPs,initialPath,DEBUG=False):
-
+    MAXPATHLEN = 150 
     Q = Queue() 
     visited = dict()
 
@@ -98,19 +119,18 @@ def BFS(board,startPs,endPs,initialPath,DEBUG=False):
             if (not (0<=newP.x and newP.x<len(board))) or (not (0<=newP.y and newP.y<len(board[0]))): newP = p 
             if board[newP.x][newP.y]=='#': newP = p 
             newPs.append(newP)
-        return newPs
+        return set(newPs)
     
     addToQueue(startPs,initialPath)
 
     while not Q.empty():
         state = Q.get()
         ps, path = state.ps, state.sciezka
-
-        print(f"ps = {ps}, path = {path}")
         
         if DEBUG:
-            if len(path)>150: continue
+            print(f"ps = {ps}, path = {path}")
 
+        if len(path) > MAXPATHLEN: continue
         if check(ps): return path
 
         psL, pathL = movePs(ps,'L') , path + 'L'
@@ -124,7 +144,7 @@ def BFS(board,startPs,endPs,initialPath,DEBUG=False):
 
         psD, pathD = movePs(ps,'D'), path + 'D'
         addToQueue(psD,pathD)
-    return "NIEZNALAZŁEM \n"
+    return False
 
 def solve(DEBUG=False):
     board = init()
@@ -132,27 +152,28 @@ def solve(DEBUG=False):
     startPos = startPos + findPos(board,'B')
     endPos = endPos + findPos(board,'B')
 
-    # for d in range((len(board)-2)//2, len(board)-2):
-    initialPath = drawPath(0)
+    if DEBUG:
+        print(f"startpos = {startPos}")
+
+    initialPath = drawPath(board)
     ps = setPosition(board,initialPath,startPos)
 
-    result = BFS(board,ps,endPos,initialPath,True)
-    if not result==False:
-        return result
+    if DEBUG:
+        print(f"initial path: {initialPath}")
+        print(f"ps = {ps}")
 
-    return False
+    if not DEBUG:
+
+        result = BFS(board,ps,endPos,initialPath,DEBUG)
+        if not result==False:
+            return result
+
+    return "NIE ZNALAZŁEM\n"
 
 
 def run():
-
-    # print(solve())
-
-
     with open( 'zad_output.txt', 'w' ) as file:
-        # result = solve()
-        # if result == False: result = "False"
-        # print(result)
-        file.write(''.join(solve(True)))
+        file.write(''.join(solve(False)))
 
 run()
     
