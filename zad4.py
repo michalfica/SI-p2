@@ -1,8 +1,5 @@
 from queue import Queue
-import random
 from tokenize import String
-from tracemalloc import start
-from turtle import pos
 from typing import List
 
 class P:
@@ -10,20 +7,17 @@ class P:
         self.x, self.y = x, y
     
     def __eq__(self, other):
-        """Overrides the default implementation"""
         if isinstance(other, P):
             return (self.x==other.x and self.y==other.y)
         return NotImplemented
 
     def __ne__(self, other):
-        """Overrides the default implementation (unnecessary in Python 3)"""
         x = self.__eq__(other)
         if x is NotImplemented:
             return NotImplemented
         return not x
 
     def __hash__(self):
-        """Overrides the default implementation"""
         return hash(tuple(sorted(self.__dict__.items())))
 
     def __str__(self):
@@ -49,16 +43,12 @@ def findPos(t,x):
     return result
 
 def drawPath(board):
-    path =''.join(   ['L']*len(board[0]) + ['D']*len(board) + ['R']*len(board[0]) + ['U']*len(board))
+    path =''.join(   ['L']*(len(board[0])-2) + ['D']*(len(board)-2) + ['R']*(len(board[0])-2) + ['U']*(len(board)-2) +  ['L']*(len(board[0])-2) )
     return path 
 
 def setPosition(board,path,Ps):
     def moveP(p,move):
         newP = P(p.x,p.y) 
-
-        """
-            ^-- tu mogą być kłopoty
-        """
 
         if move=='U': newP = P(p.x-1,p.y)
         if move=='D': newP = P(p.x+1,p.y)
@@ -90,7 +80,7 @@ class State:
     def __repr__(self):
         return f"({self.ps} ; {self.sciezka})"
 
-def BFS(board,startPs,endPs,initialPath,DEBUG=False):
+def BFS(board,startPs,endPs,initialPath):
     MAXPATHLEN = 150 
     Q = Queue() 
     visited = dict()
@@ -116,22 +106,22 @@ def BFS(board,startPs,endPs,initialPath,DEBUG=False):
             if move=='L': newP = P(p.x,p.y-1)
             if move=='R': newP = P(p.x,p.y+1)
 
-            if (not (0<=newP.x and newP.x<len(board))) or (not (0<=newP.y and newP.y<len(board[0]))): newP = p 
             if board[newP.x][newP.y]=='#': newP = p 
             newPs.append(newP)
         return set(newPs)
-    
+
+    numberOfPs = len(startPs)
     addToQueue(startPs,initialPath)
 
     while not Q.empty():
         state = Q.get()
         ps, path = state.ps, state.sciezka
-        
-        if DEBUG:
-            print(f"ps = {ps}, path = {path}")
 
-        if len(path) > MAXPATHLEN: continue
+        if len(path) > MAXPATHLEN or len(ps) > numberOfPs: continue
         if check(ps): return path
+
+        if len(ps) < numberOfPs:
+            numberOfPs = len(ps)
 
         psL, pathL = movePs(ps,'L') , path + 'L'
         addToQueue(psL,pathL)
@@ -146,34 +136,24 @@ def BFS(board,startPs,endPs,initialPath,DEBUG=False):
         addToQueue(psD,pathD)
     return False
 
-def solve(DEBUG=False):
+def solve():
     board = init()
     startPos, endPos = findPos(board,'S'), findPos(board,'G')
     startPos = startPos + findPos(board,'B')
     endPos = endPos + findPos(board,'B')
 
-    if DEBUG:
-        print(f"startpos = {startPos}")
-
     initialPath = drawPath(board)
     ps = setPosition(board,initialPath,startPos)
 
-    if DEBUG:
-        print(f"initial path: {initialPath}")
-        print(f"ps = {ps}")
-
-    if not DEBUG:
-
-        result = BFS(board,ps,endPos,initialPath,DEBUG)
-        if not result==False:
-            return result
+    result = BFS(board,ps,endPos,initialPath)
+    if not result==False:
+        return result
 
     return "NIE ZNALAZŁEM\n"
 
-
 def run():
     with open( 'zad_output.txt', 'w' ) as file:
-        file.write(''.join(solve(False)))
+        file.write(''.join(solve()))
 
 run()
     
