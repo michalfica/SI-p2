@@ -17,7 +17,7 @@ class P:
         
 def init():
     board = list()
-    with open('test3.txt', 'r') as file:
+    with open('test.txt', 'r') as file:
         lines = file.readlines()
         for line in lines:
             board.append(line.strip())
@@ -69,8 +69,8 @@ class State:
     def __repr__(self):
         return f"({self.ps} ; {self.sciezka})"
 
-def BFS(board,startPs,endPs,initialPath):
-    # MXPATH = s
+def BFS(board,startPs,endPs,initialPath,DEBUG=False):
+
     Q = Queue() 
     visited = dict()
 
@@ -108,7 +108,9 @@ def BFS(board,startPs,endPs,initialPath):
 
         print(f"ps = {ps}, path = {path}")
         
-        if len(path)>MXPATH: continue
+        if DEBUG:
+            if len(path)>150: continue
+
         if check(ps): return path
 
         psL, pathL = movePs(ps,'L') , path + 'L'
@@ -122,20 +124,19 @@ def BFS(board,startPs,endPs,initialPath):
 
         psD, pathD = movePs(ps,'D'), path + 'D'
         addToQueue(psD,pathD)
+    return "NIEZNALAZŁEM \n"
 
-def solve():
+def solve(DEBUG=False):
     board = init()
     startPos, endPos = findPos(board,'S'), findPos(board,'G')
-    # print(f'startPos = {startPos}')
     startPos = startPos + findPos(board,'B')
-    # print(f'startPos = {startPos}')
     endPos = endPos + findPos(board,'B')
 
     # for d in range((len(board)-2)//2, len(board)-2):
     initialPath = drawPath(0)
     ps = setPosition(board,initialPath,startPos)
 
-    result = BFS(board,ps,endPos,initialPath)
+    result = BFS(board,ps,endPos,initialPath,True)
     if not result==False:
         return result
 
@@ -144,14 +145,14 @@ def solve():
 
 def run():
 
-    print(solve())
+    # print(solve())
 
 
-    # with open( 'zad_output.txt', 'w' ) as file:
-    #     # result = solve()
-    #     # if result == False: result = "False"
-    #     # print(result)
-    #     file.write(''.join(solve()))
+    with open( 'zad_output.txt', 'w' ) as file:
+        # result = solve()
+        # if result == False: result = "False"
+        # print(result)
+        file.write(''.join(solve(True)))
 
 run()
     
