@@ -222,3 +222,5 @@ def run():
 
 run()
     
+
+""" przechodzi 6/21 testów """
