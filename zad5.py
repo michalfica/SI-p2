@@ -71,29 +71,43 @@ def setPosition(board,path,Ps):
     return set(newPs)
 
 class State:
-    def __init__(self,ps,g,h,sciezka):
+    def __init__(self,ps,dist,sciezka):
         '''
         ps ->      lista pozycji gdzie moze znajdować się komandos po przeyciu ścieżki
         ścieżka -> string 
         '''
 
         self.ps, self.sciezka = ps, sciezka
-        self.g, self.h = g, h
+        self.dist = dist
+
+    def __lt__(self, other):
+        if isinstance(other, State):
+            return self.dist < other.dist
+
+    def __gt__(self, other):
+        if isinstance(other, State):
+            return self.dist > other.dist
+
     def __str__(self):
         return f"({self.ps} ; {self.sciezka})"
     def __repr__(self):
-        return f"({self.ps} ; {self.sciezka})"
+        return f"(pozycje: {self.ps} ; ścieżka: {self.sciezka})"
 
-def BFS(board,startPs,endPs,initialPath):
+def BFS(board,startPs,endPs,initialPath,DEBUG):
     MAXPATHLEN = 150 
     Q = PriorityQueue()
     visited = dict()
 
-    def addToQueue(state,g,h,path):
-        if not str(state) in visited:
-            visited[str(state)] = True
-            Q.put((g+h,State(state,g,h,path)))
+    def addToQueue(ps,dist,h,path):
+        if not str(ps) in visited:
+            visited[str(ps)] =  dist
+            Q.put( (dist+h, State(ps,dist,path) ) )
+        else:
+            if visited[str(ps)] > dist:
+                visited[str(ps)] =  dist
+                Q.put( (dist+h, State(ps,dist,path) ) )
 
+        
     def check(ps):
         for p in ps:
             czyjestp = False
@@ -113,47 +127,81 @@ def BFS(board,startPs,endPs,initialPath):
             if board[newP.x][newP.y]=='#': newP = p 
             newPs.append(newP)
         return set(newPs)
+    
+    def min_distance_to_any_target(p):
+        return min( p.dist(target) for target in endPs )
 
     def h(ps):
         """
         zwraca max z odległości do najbliżśzego punktu docelowego dla każdej pozycji w stanie 
         """
-        result = 0
-        for p in ps:
-            result = max( result, min( [p.dist(e) for e in endPs]) )
-        return result 
+        return max( min_distance_to_any_target(p) for p in ps  )
+    
+    #def h(ps)
+        # result = MAXINT
+        # for p in ps:
+        #     result = min( result, min( [p.dist(e) for e in endPs]) )
+        # return result 
+
+    # def h(self, state: Poses) -> float:
+    #     return max(self.min_distance_to_any_target(guy) for guy in state)
+
+    # def min_distance_to_any_target(self, guy: Pos) -> float:
+    #     d = Heuristics.manhattan
+    #     return self._d[guy] if guy in self._d \
+    #         else min(d(guy, t) for t in self.targets)
+
 
     numberOfPs = len(startPs)
     addToQueue(startPs,0,h(startPs),initialPath)
 
+    # if DEBUG:
+        # print(f"w kolejce jest : {Q.get()}")
+
+
+
+    if DEBUG: result = list()
     while not Q.empty():
         state = Q.get()[1]
-        ps, g, path = state.ps, state.g, state.sciezka
+        ps, dist, path = state.ps, state.dist, state.sciezka
+
+        # if DEBUG:
+            # print(f"stan: ps:{ps}")
 
         if len(path) > MAXPATHLEN or len(ps) > numberOfPs: continue
-        if check(ps): return path
+
+        if DEBUG:
+            if check(ps): result.append(path+"\n")
+            if len(result)>1 : return result
+
+        if not DEBUG:
+            if check(ps): return path
 
         if len(ps) < numberOfPs:
             numberOfPs = len(ps)
+        
+        # if DEBUG: print(f"działąm dalej")
 
         psL, pathL = movePs(ps,'L') , path + 'L'
         hL = h(psL)
-        addToQueue(psL,g+1,hL,pathL)
 
-        psR, pathR = movePs(ps,'R'), path + 'R'
-        hR = h(psR)
-        addToQueue(psR,g+1,hR,pathR)
+        addToQueue(psL,dist+1,hL,pathL)
 
         psU, pathU = movePs(ps,'U'), path + 'U'
         hU = h(psU)
-        addToQueue(psU,g+1,hU,pathU)
+        addToQueue(psU,dist+1,hU,pathU)
 
         psD, pathD = movePs(ps,'D'), path + 'D'
         hD = h(psD)
-        addToQueue(psD,g+1,hD,pathD)
+        addToQueue(psD,dist+1,hD,pathD)
+
+        psR, pathR = movePs(ps,'R'), path + 'R'
+        hR = h(psR)
+        addToQueue(psR,dist+1,hR,pathR)
+
     return False
 
-def solve():
+def solve(DEBUG):
     board = init()
     startPos, endPos = findPos(board,'S'), findPos(board,'G')
     startPos = startPos + findPos(board,'B')
@@ -162,7 +210,7 @@ def solve():
     initialPath = ''
     ps = setPosition(board,initialPath,startPos)
 
-    result = BFS(board,ps,endPos,initialPath)
+    result = BFS(board,ps,endPos,initialPath,DEBUG)
     if not result==False:
         return result
 
@@ -170,7 +218,7 @@ def solve():
 
 def run():
     with open( 'zad_output.txt', 'w' ) as file:
-        file.write(''.join(solve()))
+        file.write(''.join(solve(False)))
 
 run()
     
